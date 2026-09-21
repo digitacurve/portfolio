@@ -129,15 +129,21 @@ html {
 
 /* Static BANKAI Menu Container */
 .bankai-static-menu {
-  display: flex !important;
-  flex-direction: column !important;
-  flex-shrink: 0 !important;
-  margin-bottom: 12px !important;
-  padding-bottom: 4px !important;
-  user-select: none !important;
-  position: relative !important;
-  z-index: 1000 !important;
-  pointer-events: auto !important;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+  user-select: none;
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+body[data-card-open="true"] .bankai-static-menu,
+.bankai-static-menu[data-hidden="true"],
+.bankai-static-menu.card-open-hidden {
+  display: none !important;
 }
 
 .bankai-menu-header {

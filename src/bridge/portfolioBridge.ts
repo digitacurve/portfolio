@@ -535,7 +535,7 @@ function installAssistantAndChatHooks(): void {
 
       // Track scroll position to prevent interrupting user when reading history
       messagesDiv.addEventListener("scroll", () => {
-        const isAtBottom = Math.abs(messagesDiv.scrollTop) < 60 || 
+        const isAtBottom = Math.abs(messagesDiv.scrollTop) < 60 ||
           (messagesDiv.scrollHeight - messagesDiv.scrollTop - messagesDiv.clientHeight < 60);
         messagesDiv.dataset.isAtBottom = isAtBottom ? "true" : "false";
       }, { passive: true });
@@ -552,11 +552,29 @@ function installAssistantAndChatHooks(): void {
     // Mount or synchronize the STATIC BANKAI MENU above messagesDiv
     const wrapperDiv = messagesDiv.parentElement;
     if (wrapperDiv) {
+      const rawWindow = window as any;
+      const isCardOpen = !!(rawWindow.AppState?.get && rawWindow.AppState.get("Work/project", true));
+
       let menuContainer = wrapperDiv.querySelector('.bankai-static-menu') as HTMLElement | null;
       if (!menuContainer) {
         menuContainer = document.createElement('div');
         menuContainer.className = 'bankai-static-menu';
+        if (isCardOpen) {
+          menuContainer.setAttribute('data-hidden', 'true');
+          menuContainer.classList.add('card-open-hidden');
+          menuContainer.style.setProperty('display', 'none', 'important');
+        } else {
+          menuContainer.removeAttribute('data-hidden');
+          menuContainer.classList.remove('card-open-hidden');
+          menuContainer.style.setProperty('display', 'flex', 'important');
+        }
         wrapperDiv.insertBefore(menuContainer, messagesDiv);
+      } else {
+        if (isCardOpen) {
+          menuContainer.setAttribute('data-hidden', 'true');
+          menuContainer.classList.add('card-open-hidden');
+          menuContainer.style.setProperty('display', 'none', 'important');
+        }
       }
 
       if (!menuContainer.dataset.eventsHooked) {
@@ -936,6 +954,30 @@ function installAssistantAndChatHooks(): void {
         if (inst.assistant) {
           inst.assistant.once = portfolioOnce;
         }
+        inst.listen?.("resetOptions", () => {
+          const isCardOpen = !!(rawWindow.AppState?.get && rawWindow.AppState.get("Work/project", true));
+          if (!isCardOpen) {
+            document.body.removeAttribute('data-card-open');
+            const menus = document.querySelectorAll('.bankai-static-menu') as NodeListOf<HTMLElement>;
+            menus.forEach((menu) => {
+              menu.removeAttribute('data-hidden');
+              menu.classList.remove('card-open-hidden');
+              menu.style.setProperty('display', 'flex', 'important');
+            });
+          }
+        });
+        inst.listen?.("clearText", () => {
+          const isCardOpen = !!(rawWindow.AppState?.get && rawWindow.AppState.get("Work/project", true));
+          if (isCardOpen) {
+            document.body.setAttribute('data-card-open', 'true');
+            const menus = document.querySelectorAll('.bankai-static-menu') as NodeListOf<HTMLElement>;
+            menus.forEach((menu) => {
+              menu.setAttribute('data-hidden', 'true');
+              menu.classList.add('card-open-hidden');
+              menu.style.setProperty('display', 'none', 'important');
+            });
+          }
+        });
         if (inst.messages?.div) {
           setTimeout(() => {
             renderCustomPortfolioMenu(inst.messages.div, inst);
@@ -946,6 +988,35 @@ function installAssistantAndChatHooks(): void {
       WrappedChatDOM.prototype = OriginalChatDOM.prototype;
       (WrappedChatDOM as any).__portfolioHooked = true;
       rawWindow.ChatDOM = WrappedChatDOM;
+    }
+
+    // 3. Hook Work/project state to hide BANKAI menu when viewing an opened WebGL card
+    if (rawWindow.AppState && !rawWindow.AppState.__bankaiCardVisibilityHooked) {
+      const updateVisibility = (projectData: any) => {
+        const isCardOpen = !!projectData;
+        if (typeof document !== 'undefined') {
+          if (isCardOpen) {
+            document.body.setAttribute('data-card-open', 'true');
+          } else {
+            document.body.removeAttribute('data-card-open');
+          }
+          const menus = document.querySelectorAll('.bankai-static-menu') as NodeListOf<HTMLElement>;
+          menus.forEach((menu) => {
+            if (isCardOpen) {
+              menu.setAttribute('data-hidden', 'true');
+              menu.classList.add('card-open-hidden');
+              menu.style.setProperty('display', 'none', 'important');
+            } else {
+              menu.removeAttribute('data-hidden');
+              menu.classList.remove('card-open-hidden');
+              menu.style.setProperty('display', 'flex', 'important');
+            }
+          });
+        }
+      };
+
+      rawWindow.AppState.bind("Work/project", updateVisibility);
+      rawWindow.AppState.__bankaiCardVisibilityHooked = true;
     }
 
     // 3. Fallback for CMSData.filter
