@@ -1,13 +1,15 @@
 /**
- * BANKAI Living Holographic Core Component (Phase 2)
+ * BANKAI Living Holographic Core Component
  * 
- * Futuristic holographic energy core with 3D projected gyroscopic rings,
- * orbiting quantum particles, and state-driven energy field dynamics.
+ * 3D Holographic Particle Sphere made from a dense field of luminous,
+ * self-organizing quantum dots. Features genuine volumetric depth,
+ * Fresnel silhouette luminescence, atmospheric energy aura, and state-driven
+ * organic deformation responding to voice (idle, listening, thinking, speaking).
  * 
- * - Zero WebGL context contention (High-efficiency 2D Canvas + 3D mathematical projection)
+ * - High-efficiency 2D Canvas + 3D mathematical projection (Zero WebGL context contention)
  * - Single source of truth: Consumes BankaiVoiceState only
  * - Lightweight, capped devicePixelRatio, pauses on background tabs
- * - Dual export: React component `<BankaiCore />` & DOM mount helper `createBankaiCoreElement()`
+ * - Dual export: React component `<BankaiCore />` & DOM helper `createBankaiCoreElement()`
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -20,17 +22,112 @@ export interface BankaiCoreProps {
   className?: string;
 }
 
-interface Particle3D {
-  theta: number;
-  phi: number;
-  radius: number;
-  speed: number;
-  size: number;
-  color: string;
+interface SphereParticle {
+  // Baseline spherical coordinates
+  theta: number;        // Azimuth angle [0, 2pi]
+  phi: number;          // Polar angle [-pi/2, pi/2]
+  baseRadius: number;   // Radial ratio [0.2 to 1.0]
+  type: 'surface' | 'volume' | 'corona';
+  
+  // Individual organic variation
+  orbitSpeed: number;
+  flowPhase: number;
+  noiseFreq: number;
+  baseSize: number;
+  colorType: 'cyan' | 'blue' | 'violet' | 'white';
 }
 
 /**
- * Creates and initializes the holographic canvas rendering loop
+ * Generates an ultra-dense spherical particle field with Fibonacci spiral surface
+ * distribution, internal volumetric lattice, and outer corona energy field.
+ */
+function createSphereParticleField(totalParticles = 880): SphereParticle[] {
+  const particles: SphereParticle[] = [];
+  const goldenRatio = (1 + Math.sqrt(5)) / 2;
+
+  const surfaceCount = Math.floor(totalParticles * 0.65); // 65% on surface shell
+  const volumeCount = Math.floor(totalParticles * 0.25);  // 25% in interior volume
+  const coronaCount = totalParticles - surfaceCount - volumeCount; // 10% in atmospheric corona
+
+  // 1. Surface Shell Particles (Fibonacci spherical distribution)
+  for (let i = 0; i < surfaceCount; i++) {
+    const y = 1 - (i / (surfaceCount - 1)) * 2; // y goes from 1 to -1
+    const theta = 2 * Math.PI * i / goldenRatio;
+    const phi = Math.asin(Math.max(-1, Math.min(1, y)));
+
+    const rand = Math.random();
+    let colorType: 'cyan' | 'blue' | 'violet' | 'white' = 'cyan';
+    if (rand < 0.45) colorType = 'cyan';
+    else if (rand < 0.70) colorType = 'blue';
+    else if (rand < 0.88) colorType = 'violet';
+    else colorType = 'white';
+
+    particles.push({
+      theta,
+      phi,
+      baseRadius: 0.95 + (Math.random() - 0.5) * 0.08,
+      type: 'surface',
+      orbitSpeed: (0.35 + Math.random() * 0.3) * (Math.random() > 0.5 ? 1 : -1),
+      flowPhase: Math.random() * Math.PI * 2,
+      noiseFreq: 2.0 + Math.random() * 3.0,
+      baseSize: colorType === 'white' ? 1.4 : 0.85 + Math.random() * 0.6,
+      colorType
+    });
+  }
+
+  // 2. Interior Volumetric Core Particles (Layered radial distribution)
+  for (let i = 0; i < volumeCount; i++) {
+    const u = Math.random();
+    const v = Math.random();
+    const theta = u * 2.0 * Math.PI;
+    const phi = Math.acos(2.0 * v - 1.0) - Math.PI / 2;
+    // Cube root distribution for uniform spherical volume density
+    const r = 0.25 + Math.cbrt(Math.random()) * 0.65;
+
+    const rand = Math.random();
+    let colorType: 'cyan' | 'blue' | 'violet' | 'white' = 'blue';
+    if (rand < 0.40) colorType = 'blue';
+    else if (rand < 0.75) colorType = 'violet';
+    else if (rand < 0.90) colorType = 'cyan';
+    else colorType = 'white';
+
+    particles.push({
+      theta,
+      phi,
+      baseRadius: r,
+      type: 'volume',
+      orbitSpeed: (0.4 + Math.random() * 0.4) * (Math.random() > 0.5 ? 1 : -1),
+      flowPhase: Math.random() * Math.PI * 2,
+      noiseFreq: 1.5 + Math.random() * 2.0,
+      baseSize: 0.7 + Math.random() * 0.5,
+      colorType
+    });
+  }
+
+  // 3. Outer Corona / Atmosphere Particles (Escaping and returning plasma filaments)
+  for (let i = 0; i < coronaCount; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = (Math.random() - 0.5) * Math.PI;
+    const r = 1.05 + Math.random() * 0.28;
+
+    particles.push({
+      theta,
+      phi,
+      baseRadius: r,
+      type: 'corona',
+      orbitSpeed: (0.6 + Math.random() * 0.5) * (Math.random() > 0.5 ? 1 : -1),
+      flowPhase: Math.random() * Math.PI * 2,
+      noiseFreq: 3.0 + Math.random() * 3.0,
+      baseSize: 0.6 + Math.random() * 0.5,
+      colorType: Math.random() > 0.4 ? 'cyan' : 'white'
+    });
+  }
+
+  return particles;
+}
+
+/**
+ * Creates and initializes the Holographic Particle Sphere canvas rendering loop
  */
 export function initBankaiCoreCanvas(
   canvas: HTMLCanvasElement,
@@ -46,46 +143,16 @@ export function initBankaiCoreCanvas(
   canvas.style.width = `${size}px`;
   canvas.style.height = `${size}px`;
 
-  // Initialize 16 3D orbiting particles
-  const particles: Particle3D[] = [];
-  const particleColors = ['#00e5ff', '#ffffff', '#7df9ff', '#ba7cde'];
-  for (let i = 0; i < 16; i++) {
-    particles.push({
-      theta: Math.random() * Math.PI * 2,
-      phi: (Math.random() - 0.5) * Math.PI,
-      radius: size * (0.32 + Math.random() * 0.12),
-      speed: (0.015 + Math.random() * 0.015) * (Math.random() > 0.5 ? 1 : -1),
-      size: 1.0 + Math.random() * 1.5,
-      color: particleColors[i % particleColors.length]
-    });
-  }
+  const particles = createSphereParticleField(920);
 
   let animFrameId: number | null = null;
   let isRunning = true;
   let time = 0;
 
-  // 3D rotation helper
-  function rotate3D(x: number, y: number, z: number, rx: number, ry: number, rz: number): [number, number, number] {
-    // Rotate X
-    const cosX = Math.cos(rx);
-    const sinX = Math.sin(rx);
-    const y1 = y * cosX - z * sinX;
-    const z1 = y * sinX + z * cosX;
-
-    // Rotate Y
-    const cosY = Math.cos(ry);
-    const sinY = Math.sin(ry);
-    const x2 = x * cosY + z1 * sinY;
-    const z2 = -x * sinY + z1 * cosY;
-
-    // Rotate Z
-    const cosZ = Math.cos(rz);
-    const sinZ = Math.sin(rz);
-    const x3 = x2 * cosZ - y1 * sinZ;
-    const y3 = x2 * sinZ + y1 * cosZ;
-
-    return [x3, y3, z2];
-  }
+  // Rotation angles for multiple harmonic axes
+  let rotY = 0;
+  let rotX = 0.22;
+  let rotZ = 0.12;
 
   function render() {
     if (!isRunning || !ctx) return;
@@ -93,171 +160,239 @@ export function initBankaiCoreCanvas(
     const state = getState();
     const cx = (size * dpr) / 2;
     const cy = (size * dpr) / 2;
-    const baseR = (size * dpr) * 0.32;
+    const sphereRadius = (size * dpr) * 0.38; // Radius of main holographic sphere
 
-    // State-specific motion dynamics
+    // -------------------------------------------------------------
+    // Voice State Dynamics & Physical Parameters
+    // -------------------------------------------------------------
     let speedMult = 1.0;
-    let pulseScale = 1.0;
-    let coreColor = '#00e5ff';
-    let auraAlpha = 0.18;
+    let breathScale = 1.0;
+    let waveAmplitude = 0.03;
+    let energyGlow = 0.25;
+    let speakingDeform = 0;
+    let thinkingTurbulence = 0;
 
     switch (state) {
       case 'wake-ready':
-        speedMult = 1.15;
-        pulseScale = 1.02 + Math.sin(time * 2.4) * 0.035;
-        coreColor = '#00f7ff';
-        auraAlpha = 0.24;
+        speedMult = 1.35;
+        breathScale = 1.04 + Math.sin(time * 2.8) * 0.04;
+        waveAmplitude = 0.06;
+        energyGlow = 0.35;
         break;
+
       case 'listening':
-        speedMult = 1.8;
-        pulseScale = 1.06 + Math.sin(time * 3.5) * 0.05;
-        coreColor = '#00f0ff';
-        auraAlpha = 0.35;
+        // Listening: Expands slightly, energetic ripple waves responding to audio input
+        speedMult = 2.0;
+        breathScale = 1.09 + Math.sin(time * 4.2) * 0.055;
+        waveAmplitude = 0.12;
+        energyGlow = 0.45;
         break;
+
       case 'thinking':
-        speedMult = 2.4;
-        pulseScale = 0.98 + Math.sin(time * 5.0) * 0.03;
-        coreColor = '#ba7cde';
-        auraAlpha = 0.28;
+        // Thinking: High internal swirl, turbulent vortex currents, purple/cyan surges
+        speedMult = 2.6;
+        breathScale = 1.01 + Math.sin(time * 5.5) * 0.035;
+        waveAmplitude = 0.09;
+        thinkingTurbulence = 1.0;
+        energyGlow = 0.40;
         break;
+
       case 'speaking':
-        speedMult = 1.6;
-        // Harmonic vocal simulation
-        pulseScale = 1.04 + Math.sin(time * 4.2) * 0.06 + Math.sin(time * 8.4) * 0.03;
-        coreColor = '#00e5ff';
-        auraAlpha = 0.32;
+        // Speaking: Strongest reaction — organic physical vocal deformation & harmonic pulses
+        speedMult = 1.9;
+        speakingDeform = Math.sin(time * 6.5) * 0.08 + Math.sin(time * 13.2) * 0.045 + Math.cos(time * 9.1) * 0.035;
+        breathScale = 1.08 + speakingDeform;
+        waveAmplitude = 0.18;
+        energyGlow = 0.52;
         break;
+
       case 'error':
-        speedMult = 0.6;
-        pulseScale = 0.96 + Math.sin(time * 1.5) * 0.02;
-        coreColor = '#ff9f0a';
-        auraAlpha = 0.22;
+        speedMult = 0.7;
+        breathScale = 0.95 + Math.sin(time * 1.6) * 0.02;
+        waveAmplitude = 0.04;
+        energyGlow = 0.25;
         break;
+
       case 'idle':
       default:
+        // Idle: Slow, elegant organic movement, peaceful breathing
         speedMult = 1.0;
-        pulseScale = 1.0 + Math.sin(time * 1.8) * 0.025;
-        coreColor = '#00e5ff';
-        auraAlpha = 0.18;
+        breathScale = 1.0 + Math.sin(time * 1.8) * 0.028;
+        waveAmplitude = 0.035;
+        energyGlow = 0.24;
         break;
     }
 
-    time += 0.016 * speedMult;
+    const dt = 0.016 * speedMult;
+    time += dt;
+    rotY += 0.012 * speedMult;
+    rotX = 0.22 + Math.sin(time * 0.5) * 0.08;
+    rotZ = 0.12 + Math.cos(time * 0.4) * 0.06;
 
     ctx.clearRect(0, 0, size * dpr, size * dpr);
 
-    // 1. Atmospheric Volumetric Glow
-    const auraRadius = baseR * 1.6 * pulseScale;
-    const auraGrad = ctx.createRadialGradient(cx, cy, baseR * 0.2, cx, cy, auraRadius);
+    // -------------------------------------------------------------
+    // 1. Volumetric Atmosphere & Silhouette Glow Background
+    // -------------------------------------------------------------
+    const auraRadius = sphereRadius * 1.45 * breathScale;
+    const auraGrad = ctx.createRadialGradient(cx, cy, sphereRadius * 0.25, cx, cy, auraRadius);
+
     if (state === 'thinking') {
-      auraGrad.addColorStop(0, `rgba(186, 124, 222, ${auraAlpha * 1.2})`);
-      auraGrad.addColorStop(0.5, `rgba(0, 229, 255, ${auraAlpha * 0.6})`);
+      auraGrad.addColorStop(0, `rgba(186, 124, 222, ${energyGlow * 0.85})`);
+      auraGrad.addColorStop(0.6, `rgba(0, 229, 255, ${energyGlow * 0.4})`);
       auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     } else if (state === 'error') {
-      auraGrad.addColorStop(0, `rgba(255, 159, 10, ${auraAlpha * 1.2})`);
-      auraGrad.addColorStop(0.6, `rgba(255, 69, 58, ${auraAlpha * 0.5})`);
-      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    } else if (state === 'wake-ready') {
-      auraGrad.addColorStop(0, `rgba(0, 247, 255, ${auraAlpha * 1.35})`);
-      auraGrad.addColorStop(0.5, `rgba(0, 200, 255, ${auraAlpha * 0.7})`);
+      auraGrad.addColorStop(0, `rgba(255, 159, 10, ${energyGlow * 0.9})`);
+      auraGrad.addColorStop(0.6, `rgba(255, 69, 58, ${energyGlow * 0.4})`);
       auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     } else {
-      auraGrad.addColorStop(0, `rgba(0, 229, 255, ${auraAlpha * 1.3})`);
-      auraGrad.addColorStop(0.5, `rgba(0, 180, 255, ${auraAlpha * 0.5})`);
+      auraGrad.addColorStop(0, `rgba(0, 180, 255, ${energyGlow * 0.5})`);
+      auraGrad.addColorStop(0.65, `rgba(0, 240, 255, ${energyGlow * 0.8})`);
+      auraGrad.addColorStop(0.95, `rgba(0, 229, 255, ${energyGlow * 0.2})`);
       auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     }
+
     ctx.fillStyle = auraGrad;
     ctx.beginPath();
     ctx.arc(cx, cy, auraRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Draw 3D Gyroscopic Orbital Rings
-    const rings = [
-      { rx: 0.85, ry: time * 0.8, rz: 0.2, r: baseR * 1.05 * pulseScale, segments: 40, width: 1.5 },
-      { rx: -0.6, ry: -time * 1.1, rz: time * 0.4, r: baseR * 0.92 * pulseScale, segments: 36, width: 1.2 },
-      { rx: time * 0.5, ry: 0.9, rz: -time * 0.7, r: baseR * 1.18 * pulseScale, segments: 44, width: 1.0 }
-    ];
+    // -------------------------------------------------------------
+    // 2. Projected 3D Holographic Particle Swarm
+    // -------------------------------------------------------------
+    const cosY = Math.cos(rotY);
+    const sinY = Math.sin(rotY);
+    const cosX = Math.cos(rotX);
+    const sinX = Math.sin(rotX);
+    const cosZ = Math.cos(rotZ);
+    const sinZ = Math.sin(rotZ);
 
-    rings.forEach((ring, rIdx) => {
-      const pts: { x: number; y: number; z: number }[] = [];
-      for (let s = 0; s <= ring.segments; s++) {
-        const theta = (s / ring.segments) * Math.PI * 2;
-        const x0 = Math.cos(theta) * ring.r;
-        const y0 = Math.sin(theta) * ring.r;
-        const z0 = 0;
-        const [x1, y1, z1] = rotate3D(x0, y0, z0, ring.rx, ring.ry, ring.rz);
-        pts.push({ x: cx + x1, y: cy + y1, z: z1 });
+    const currentRadius = sphereRadius * breathScale;
+
+    // Use additive blending for dazzling glowing star-field luminescence
+    ctx.globalCompositeOperation = 'lighter';
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+
+      // Dynamic orbital motion & flow vectors
+      let curTheta = p.theta + (p.orbitSpeed * dt * 2.0);
+      let curPhi = p.phi;
+
+      // Thinking: Counter-rotating latitude vortex swirls
+      if (thinkingTurbulence > 0) {
+        const swirlDir = curPhi > 0 ? 1 : -1;
+        curTheta += swirlDir * 0.03 * speedMult;
       }
 
-      // Draw ring segments with depth luminescence
-      for (let i = 0; i < pts.length - 1; i++) {
-        const p1 = pts[i];
-        const p2 = pts[i + 1];
-        const avgZ = (p1.z + p2.z) / 2;
-        const depthAlpha = Math.max(0.12, Math.min(0.95, 0.5 + avgZ / (baseR * 2)));
+      // Surface organic harmonic waves (ripples across spherical surface)
+      const wave = Math.sin(curTheta * p.noiseFreq + time * 3.2 + p.flowPhase) *
+                   Math.cos(curPhi * p.noiseFreq - time * 2.5) * waveAmplitude;
 
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineWidth = ring.width * (0.8 + depthAlpha * 0.6) * dpr;
-
-        if (rIdx === 1 && state === 'thinking') {
-          ctx.strokeStyle = `rgba(186, 124, 222, ${depthAlpha * 0.9})`;
-        } else if (state === 'error') {
-          ctx.strokeStyle = `rgba(255, 159, 10, ${depthAlpha * 0.85})`;
-        } else {
-          ctx.strokeStyle = `rgba(0, 229, 255, ${depthAlpha * 0.9})`;
+      // Speaking: Harmonic vocal waves & particle ejection / pull-back
+      let vocalPulse = 0;
+      if (state === 'speaking') {
+        vocalPulse = Math.sin(curTheta * 4.0 + time * 8.0) * Math.cos(curPhi * 3.0 - time * 6.0) * 0.12;
+        if (p.type === 'corona' && Math.sin(time * 5.0 + i) > 0.6) {
+          vocalPulse += 0.25 * Math.sin(time * 10.0 + i);
         }
-        ctx.stroke();
       }
-    });
 
-    // 3. Central Energy Core Singularity
-    const coreR = baseR * 0.38 * pulseScale;
-    const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
-    if (state === 'thinking') {
-      coreGrad.addColorStop(0, '#ffffff');
-      coreGrad.addColorStop(0.4, '#e0b0ff');
-      coreGrad.addColorStop(0.8, '#ba7cde');
-      coreGrad.addColorStop(1, 'rgba(186, 124, 222, 0)');
-    } else if (state === 'error') {
-      coreGrad.addColorStop(0, '#ffffff');
-      coreGrad.addColorStop(0.4, '#ffd166');
-      coreGrad.addColorStop(0.8, '#ff9f0a');
-      coreGrad.addColorStop(1, 'rgba(255, 159, 10, 0)');
-    } else {
-      coreGrad.addColorStop(0, '#ffffff');
-      coreGrad.addColorStop(0.35, '#80f2ff');
-      coreGrad.addColorStop(0.75, coreColor);
-      coreGrad.addColorStop(1, 'rgba(0, 229, 255, 0)');
-    }
-    ctx.fillStyle = coreGrad;
-    ctx.beginPath();
-    ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
-    ctx.fill();
+      // Compute local 3D point
+      const r = currentRadius * (p.baseRadius + wave + vocalPulse);
+      const cosPhi = Math.cos(curPhi);
+      const sinPhi = Math.sin(curPhi);
 
-    // 4. Orbiting Quantum Particle Swarm
-    particles.forEach((p) => {
-      p.theta += p.speed * speedMult;
-      const x0 = Math.cos(p.theta) * Math.cos(p.phi) * p.radius * pulseScale;
-      const y0 = Math.sin(p.theta) * Math.cos(p.phi) * p.radius * pulseScale;
-      const z0 = Math.sin(p.phi) * p.radius * pulseScale;
+      const x0 = Math.cos(curTheta) * cosPhi * r;
+      const y0 = sinPhi * r;
+      const z0 = Math.sin(curTheta) * cosPhi * r;
 
-      const [px, py, pz] = rotate3D(x0, y0, z0, 0.4, time * 0.6, 0.2);
-      const depthAlpha = Math.max(0.2, Math.min(1.0, 0.55 + pz / (baseR * 2)));
-      const pDrawSize = p.size * (0.8 + depthAlpha * 0.5) * dpr;
+      // 3D Matrix Rotation (Y -> X -> Z)
+      // Rotate Y
+      const x1 = x0 * cosY + z0 * sinY;
+      const z1 = -x0 * sinY + z0 * cosY;
 
-      ctx.beginPath();
-      ctx.arc(cx + px, cy + py, pDrawSize, 0, Math.PI * 2);
+      // Rotate X
+      const y2 = y0 * cosX - z1 * sinX;
+      const z2 = y0 * sinX + z1 * cosX;
+
+      // Rotate Z
+      const x3 = x1 * cosZ - y2 * sinZ;
+      const y3 = x1 * sinZ + y2 * cosZ;
+      const z3 = z2;
+
+      // Perspective projection & Depth parameters
+      // z3 > 0 is front facing; z3 < 0 is back facing
+      const normalizedZ = z3 / currentRadius; // [-1.2 to +1.2]
+      const depthFactor = (normalizedZ + 1.2) / 2.4; // [0.0 (deep back) to 1.0 (front)]
+
+      // Fresnel Silhouette Edge Enhancement:
+      // Points near the 2D outer rim (perpendicular to viewing ray) glow with highest density
+      const distFromCenter2D = Math.sqrt(x3 * x3 + y3 * y3) / currentRadius;
+      const edgeFactor = Math.min(1.0, Math.pow(distFromCenter2D, 2.2));
+
+      // Calculate particle luminescence & alpha
+      let alpha = 0.25 + depthFactor * 0.45 + edgeFactor * 0.4;
+      alpha = Math.max(0.08, Math.min(1.0, alpha));
+
+      // Particle rendered size with depth scaling
+      let pDrawSize = p.baseSize * dpr * (0.65 + depthFactor * 0.6);
+      if (p.type === 'surface' && edgeFactor > 0.8) {
+        pDrawSize *= 1.2; // Pronounced outer edge micro-dots
+      }
+
+      // Color mapping with state tints
+      let colorStr: string;
       if (state === 'thinking') {
-        ctx.fillStyle = depthAlpha > 0.6 ? '#ffffff' : `rgba(186, 124, 222, ${depthAlpha})`;
+        if (p.colorType === 'white' && depthFactor > 0.6) {
+          colorStr = `rgba(255, 255, 255, ${alpha})`;
+        } else if (p.colorType === 'violet' || (i % 3 === 0)) {
+          colorStr = `rgba(200, 140, 255, ${alpha})`;
+        } else {
+          colorStr = `rgba(0, 229, 255, ${alpha * 0.8})`;
+        }
       } else if (state === 'error') {
-        ctx.fillStyle = depthAlpha > 0.6 ? '#ffffff' : `rgba(255, 159, 10, ${depthAlpha})`;
+        colorStr = p.colorType === 'white'
+          ? `rgba(255, 255, 255, ${alpha})`
+          : `rgba(255, 120, 20, ${alpha})`;
       } else {
-        ctx.fillStyle = depthAlpha > 0.6 ? '#ffffff' : `rgba(0, 229, 255, ${depthAlpha})`;
+        // Cyan / Electric Blue / Violet / White core palette
+        if (p.colorType === 'white' && depthFactor > 0.5) {
+          colorStr = `rgba(255, 255, 255, ${alpha})`;
+        } else if (p.colorType === 'cyan') {
+          colorStr = `rgba(0, 247, 255, ${alpha})`;
+        } else if (p.colorType === 'blue') {
+          colorStr = `rgba(0, 140, 255, ${alpha})`;
+        } else {
+          colorStr = `rgba(186, 124, 222, ${alpha * 0.9})`;
+        }
       }
+
+      // Draw glowing luminous micro-particle
+      ctx.fillStyle = colorStr;
+      ctx.beginPath();
+      ctx.arc(cx + x3, cy + y3, pDrawSize, 0, Math.PI * 2);
       ctx.fill();
-    });
+    }
+
+    // -------------------------------------------------------------
+    // 3. Dense Edge Silhouette Ring (Luminous Circular Horizon)
+    // -------------------------------------------------------------
+    const rimRadius = currentRadius * 0.98;
+    ctx.beginPath();
+    ctx.arc(cx, cy, rimRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 1.0 * dpr;
+    if (state === 'thinking') {
+      ctx.strokeStyle = `rgba(186, 124, 222, ${0.35 * energyGlow})`;
+    } else if (state === 'error') {
+      ctx.strokeStyle = `rgba(255, 159, 10, ${0.4 * energyGlow})`;
+    } else {
+      ctx.strokeStyle = `rgba(0, 240, 255, ${0.45 * energyGlow})`;
+    }
+    ctx.stroke();
+
+    // Reset composite operation
+    ctx.globalCompositeOperation = 'source-over';
 
     animFrameId = requestAnimationFrame(render);
   }
@@ -304,7 +439,7 @@ export function createBankaiCoreElement(options: {
   container.className = 'bankai-hologram-core-wrap';
   container.setAttribute('role', 'button');
   container.setAttribute('tabindex', '0');
-  container.setAttribute('aria-label', 'BANKAI Holographic Core');
+  container.setAttribute('aria-label', 'BANKAI Holographic Particle Core');
 
   const canvas = document.createElement('canvas');
   canvas.className = 'bankai-hologram-canvas';
@@ -383,7 +518,7 @@ export const BankaiCore: React.FC<BankaiCoreProps> = ({
       onClick={onClick}
       role={onClick ? 'button' : 'presentation'}
       tabIndex={onClick ? 0 : -1}
-      aria-label="BANKAI Holographic Core"
+      aria-label="BANKAI Holographic Particle Core"
       data-voice-state={state || bankaiVoice.getState()}
     >
       <canvas ref={canvasRef} className="bankai-hologram-canvas" />
